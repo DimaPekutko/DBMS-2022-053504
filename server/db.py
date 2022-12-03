@@ -1,12 +1,11 @@
-import os
 import psycopg2
 from psycopg2 import OperationalError
 
 
-def raw_sql(db, query):
+def raw_sql(db, query, params=None):
     cursor = db.cursor()
     try:
-        result = cursor.execute(query)
+        cursor.execute(query, params)
         db.commit()
         return cursor
     except OperationalError as e:
@@ -30,10 +29,10 @@ def __create_db_connection(db_name, db_user, db_password, db_host, db_port):
 
 
 def __define_tables(db):
-    raw_sql(db, open("server/sql/tables.sql", "r").read())
-    res = raw_sql(db, open("server/sql/fake.sql", "r").read())
-    for r in res:
-        print(r)
+    raw_sql(db, open("sql/tables.sql", "r").read())
+    res = raw_sql(db, open("sql/fake.sql", "r").read())
+    # for r in res:
+    #     print(r)
 
 
 def get_db():

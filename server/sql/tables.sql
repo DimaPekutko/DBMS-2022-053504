@@ -6,6 +6,13 @@ DROP TABLE IF EXISTS subcategories  CASCADE;
 DROP TABLE IF EXISTS products_descs CASCADE;
 DROP TABLE IF EXISTS products       CASCADE;
 DROP TABLE IF EXISTS product_images CASCADE;
+DROP TYPE IF EXISTS ACTIVITY_STATUS_TYPE;
+
+
+CREATE TYPE ACTIVITY_STATUS_TYPE AS ENUM (
+    'active',
+    'inactive'
+);
 
 
 CREATE TABLE IF NOT EXISTS users_roles (
@@ -14,20 +21,26 @@ CREATE TABLE IF NOT EXISTS users_roles (
 );
 
 
+INSERT INTO users_roles (name) VALUES
+    ('admin'),
+    ('moderator'),
+    ('user');
+
+
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
-    role_id INT REFERENCES users_roles(id) ON DELETE SET NULL,
+    role_id INT REFERENCES users_roles(id) ON DELETE SET NULL DEFAULT 3,
     name VARCHAR(100) NOT NULL,
-    email VARCHAR(50) NOT NULL,
+    email VARCHAR(50) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    status VARCHAR(100) NOT NULL DEFAULT 'active'
+    status ACTIVITY_STATUS_TYPE NOT NULL DEFAULT 'active'
 );
 
 
 CREATE TABLE IF NOT EXISTS users_logs (
     id SERIAL PRIMARY KEY,
     user_id INT REFERENCES users(id) ON DELETE SET NULL,
-    name VARCHAR(100) NOT NULL
+    content VARCHAR(100) NOT NULL
 );
 
 
@@ -57,7 +70,7 @@ CREATE TABLE IF NOT EXISTS products (
     user_id INT REFERENCES users(id) ON DELETE CASCADE,
     subcategory_id INT REFERENCES subcategories(id) ON DELETE SET NULL,
     products_desc_id INT REFERENCES products_descs(id) ON DELETE SET NULL,
-    status VARCHAR(100) NOT NULL DEFAULT 'active'
+    status ACTIVITY_STATUS_TYPE NOT NULL DEFAULT 'active'
 );
 
 
