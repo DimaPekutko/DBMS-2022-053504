@@ -85,3 +85,130 @@ CREATE INDEX users_idx          ON users (id);
 CREATE INDEX products_idx       ON products (id);
 CREATE INDEX products_descs_idx ON products_descs (id);
 
+
+CREATE OR REPLACE FUNCTION create_product_user_log()
+    RETURNS trigger AS
+$$
+BEGIN
+    INSERT INTO users_logs (
+        user_id,
+        content
+    ) VALUES (
+        NEW.user_id,
+        CONCAT(
+            'User with id=',
+            NEW.user_id,
+            ' created new product (id=',
+            NEW.id,
+            ')'
+        )
+    );
+    RETURN NEW;
+END;
+$$
+LANGUAGE 'plpgsql';
+
+
+CREATE OR REPLACE FUNCTION update_product_desc_user_log()
+    RETURNS trigger AS
+$$
+DECLARE
+   tmp_user_id integer; 
+BEGIN
+    SELECT user_id INTO tmp_user_id
+        FROM products
+        WHERE products.products_desc_id = OLD.id;
+    INSERT INTO users_logs (
+        user_id,
+        content
+    ) VALUES (
+        tmp_user_id,
+        CONCAT(
+            'User with id=',
+            tmp_user_id,
+            ' updated product'
+        )
+    );
+    RETURN OLD;
+END;
+$$
+LANGUAGE 'plpgsql';
+
+
+CREATE OR REPLACE FUNCTION delete_product_user_log()
+    RETURNS trigger AS
+$$
+BEGIN
+    INSERT INTO users_logs (
+        user_id,
+        content
+    ) VALUES (
+        OLD.user_id,
+        CONCAT(
+            'User with id=',
+            OLD.user_id,
+            ' deleted product (id=',
+            OLD.id,
+            ')'
+        )
+    );
+    RETURN OLD;
+END;
+$$
+LANGUAGE 'plpgsql';
+
+
+CREATE OR REPLACE FUNCTION update_user_status()
+    RETURNS trigger AS
+$$
+BEGIN
+    INSERT INTO users_logs (
+        user_id,
+        content
+    ) VALUES (
+        OLD.id,
+        CONCAT(
+            'Status of user with id=',
+            OLD.id,
+            ' changed to ',
+            NEW.status
+        )
+    );
+
+    UPDATE products
+    SET
+        status = NEW.status
+    WHERE 
+        user_id = OLD.id;
+    RETURN NEW;
+END;
+$$
+LANGUAGE 'plpgsql';
+
+
+CREATE TRIGGER create_product_user_log_trigger
+    AFTER INSERT
+    ON products
+    FOR EACH ROW
+    EXECUTE PROCEDURE create_product_user_log();
+
+
+CREATE TRIGGER update_product_desc_user_log_trigger
+    AFTER UPDATE
+    ON products_descs
+    FOR EACH ROW
+    EXECUTE PROCEDURE update_product_desc_user_log();
+
+
+CREATE TRIGGER delete_product_user_log_trigger
+    AFTER DELETE
+    ON products
+    FOR EACH ROW
+    EXECUTE PROCEDURE delete_product_user_log();
+
+
+CREATE TRIGGER update_user_status_trigger
+    AFTER UPDATE
+    OF status ON users
+    FOR EACH ROW
+    EXECUTE PROCEDURE update_user_status();
